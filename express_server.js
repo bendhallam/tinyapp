@@ -25,8 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.post("/urls", (req, res) => {
   const newKey = generateRandomString();
   urlDatabase[newKey] = req.body.longURL;
-  const templateVars = { id: newKey, longURL: req.body.longURL };
-  res.render("urls_show", templateVars);
+  res.redirect(`/urls/${newKey}`);
 });
 
 app.get("/", (req, res) => {
