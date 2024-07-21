@@ -3,7 +3,7 @@ const app = express();
 const PORT = 8080; //default port 8080
 
 
-function generateRandomString() {
+const generateRandomString = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
   for (let i = 0; i < 6; i++) {
@@ -11,7 +11,7 @@ function generateRandomString() {
     result += characters.charAt(randomIndex);
   }
   return result;
-}
+};
 
 app.set("view engine", "ejs");
 
@@ -23,12 +23,19 @@ const urlDatabase = {
 app.use(express.urlencoded({ extended: true }));
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);
-  res.send(generateRandomString());
-})
+  const newKey = generateRandomString();
+  urlDatabase[newKey] = req.body.longURL;
+  const templateVars = { id: newKey, longURL: req.body.longURL };
+  res.render("urls_show", templateVars);
+});
 
 app.get("/", (req, res) => {
   res.send("Hello!");
+});
+
+app.get("/u/:id", (req, res) => {
+  const id = req.params.id;
+  res.redirect(urlDatabase[id]);
 });
 
 app.get("/urls/new", (req, res) => {
@@ -38,7 +45,7 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:id", (req, res) => {
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
   res.render("urls_show", templateVars);
-  console.log(templateVars)
+  console.log(templateVars);
 });
 
 
