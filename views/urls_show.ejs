@@ -24,7 +24,7 @@
                 Short URL ID: <a href="/u/<%= id %>"><%= id %></a><br>
                 Create a new URL: <a href="#">Here</A>
                 <div class="d-flex justify-content-center">
-                    <form class="form-inline" action="/urls/<%= id %>/edit" method="POST">
+                    <form class="form-inline" action="/urls/<%= id %>" method="POST">
                         <div class="form-group mx-sm-3 mb-2">
                             <label for="longURL">Update URL:</label>
                             <input class="form-control" type="text" id="longURL" name="longURL" placeholder="http://"
