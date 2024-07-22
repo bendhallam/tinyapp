@@ -29,9 +29,17 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  const id = req.params.id;
-  delete urlDatabase[id];
+  delete urlDatabase[req.params.id];
   res.redirect("/urls");
+});
+
+app.post("/urls/:id/edit", (req, res) => {
+  urlDatabase[req.params.id] = req.body.longURL;
+  res.redirect("/urls");
+});
+
+app.post("/urls/:id", (req, res) => {
+  res.redirect(`/urls/${req.params.id}`);
 });
 
 app.get("/", (req, res) => {
