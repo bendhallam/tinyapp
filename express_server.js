@@ -46,11 +46,21 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
-//handle login
-app.post("/login", (req,res) => {
-  res.cookie("username", req.body.username)
-  res.redirect("/urls")
-})
+
+// Handle login
+app.post("/login", (req, res) => {
+  if (req.body.username) {
+    res.cookie("username", req.body.username);
+  }
+  res.redirect("/urls");
+});
+
+// Handle logout
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
+  res.redirect("/urls");
+});
+
 
 //main page
 app.get("/", (req, res) => {
@@ -79,15 +89,15 @@ app.get("/urls/:id", (req, res) => {
   console.log(templateVars);
 });
 
-//index of URLs
+// Index of URLs
 app.get("/urls", (req, res) => {
   const templateVars = {
     username: req.cookies["username"],
     urls: urlDatabase
   };
   res.render("urls_index", templateVars);
-
 });
+
 
 //run server
 app.listen(PORT, () => {
