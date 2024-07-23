@@ -1,5 +1,7 @@
 const express = require("express");
+const cookieParser = require("cookie-parser")
 const app = express();
+app.use(cookieParser())
 const PORT = 8080; //default port 8080
 
 //shortened URL string generator
@@ -68,15 +70,23 @@ app.get("/urls/new", (req, res) => {
 
 //URL-specific update page
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  const templateVars = { 
+    id: req.params.id, 
+    longURL: urlDatabase[req.params.id],
+    username: req.cookies["username"] 
+  };
   res.render("urls_show", templateVars);
   console.log(templateVars);
 });
 
 //index of URLs
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = {
+    username: req.cookies["username"],
+    urls: urlDatabase
+  };
   res.render("urls_index", templateVars);
+
 });
 
 //run server
