@@ -75,7 +75,12 @@ app.get("/u/:id", (req, res) => {
 
 //new URL page
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = { 
+    id: req.params.id, 
+    longURL: urlDatabase[req.params.id],
+    username: req.cookies["username"] 
+  };
+  res.render("urls_new", templateVars);
 });
 
 //URL-specific update page
@@ -98,6 +103,14 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+app.get("/register", (req,res) => {
+  const templateVars = { 
+    id: req.params.id, 
+    longURL: urlDatabase[req.params.id],
+    username: req.cookies["username"] 
+  };
+  res.render("register", templateVars);
+});
 
 //run server
 app.listen(PORT, () => {
