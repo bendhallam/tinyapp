@@ -44,6 +44,12 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
+//handle login
+app.post("/login", (req,res) => {
+  res.cookie("username", req.body.username)
+  res.redirect("/urls")
+})
+
 //main page
 app.get("/", (req, res) => {
   res.send("Hello!");
