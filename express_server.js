@@ -96,7 +96,16 @@ app.post("/urls/:id", (req, res) => {
 
 // Handle login
 app.post("/login", (req, res) => {
-  res.cookie("user_id", req.body.username);
+  const { email, password } = req.body;
+  const userLoggingIn = getUserFromEmail(email);
+  if (getUserFromEmail(email) === null) {
+    return res.status(400).send("No account found with this email address.")
+  }
+  const userID = userLoggingIn.id;
+  if (password != users[userID]["password"]){
+    return res.status(400).send("Wrong password.");
+  }
+  res.cookie("user_id", userID);
   res.redirect("/urls");
 });
 
