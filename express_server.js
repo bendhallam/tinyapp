@@ -15,6 +15,18 @@ const generateRandomString = () => {
   return result;
 };
 
+//find a user object from email
+const getUserFromEmail = (searchedEmail) => {
+  for (let key in users) {
+    if (users[key].email === searchedEmail) {
+      return users[key];
+    }
+  }
+  return null;
+};
+
+
+
 app.set("view engine", "ejs");
 
 
@@ -23,6 +35,7 @@ const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xL": "http://www.google.com",
 };
+
 
 //object to store our users
 const users = {
@@ -40,17 +53,26 @@ const users = {
 
 app.use(express.urlencoded({ extended: true }));
 
-//result of registering
+// Result of registering
 app.post("/register", (req, res) => {
+  const { email, password } = req.body;
+  // Check if email or password are blank
+  if (!email || !password) {
+    return res.status(400).send("Email or password cannot be blank.");
+  }
+  // Check if email is already in use
+  if (getUserFromEmail(email) !== null){
+    return res.status(400).send("Email already in use.");
+  }
   const newUserID = generateRandomString();
   users[newUserID] = {
     id: newUserID,
-    email: req.body.email,
-    password: req.body.password
-  }
-  res.cookie("user_id", newUserID)
-  res.redirect("/urls")
-})
+    email: email,
+    password: password
+  };
+  res.cookie("user_id", newUserID);
+  res.redirect("/urls");
+});
 
 //result of submitting new URL
 app.post("/urls", (req, res) => {
