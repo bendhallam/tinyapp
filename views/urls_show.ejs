@@ -18,11 +18,13 @@
   <body>
     <div class="card text-center">
         <div class="card-header"></div>
+        <!-- SHORTENED URL INFORMATION -->
         <div class="card-body">
             <h5 class="card-title">TinyURL for: <%= longURL %></h5>
             <p class="card-text">
                 Short URL ID: <a href="/u/<%= id %>"><%= id %></a><br>
                 Create a new URL: <a href="/urls/new">Here</A>
+                <!-- UPDATE URL FORM -->
                 <div class="d-flex justify-content-center">
                     <form class="form-inline" action="/urls/<%= id %>" method="POST">
                         <div class="form-group mx-sm-3 mb-2">

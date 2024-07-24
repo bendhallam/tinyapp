@@ -24,8 +24,10 @@
   <body>
     <main style="margin: 1em;">
       <h3>My URLs</h3>
+      <!-- TABLE OF REGISTERED URLS -->
       <table class="table">
         <thead>
+          <!-- COLUMN LABELS -->
           <tr>
             <th scope="col">Short URL ID</th>
             <th scope="col">Long URL</th>
@@ -33,17 +35,20 @@
             <th scope="col">Delete</th>
           </tr>
         </thead>
+        <!-- FILL IN TABLE ROWS -->
         <tbody>
           <% for (let id in urls) { %>
             <tr>
               <td><%= id %></td>
               <td><%= urls[id] %></td>
+              <!-- EDIT URL BUTTON -->
               <td>
                 <form method="GET" action="/urls/<%= id %>">
                   <button type="submit" class="btn btn-primary"
                   style="color: blue; border-color: blue; background-color: white">Edit</button>
                 </form>
               </td>
+              <!-- DELETE URL BUTTON -->
               <td>
                 <form method="POST" action="/urls/<%= id %>/delete">
                   <button type="submit" class="btn btn-primary" 

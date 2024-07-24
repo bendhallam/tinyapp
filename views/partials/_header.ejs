@@ -18,15 +18,24 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
-    <% if (!users[user]) { %>
-     <a href="/login">Login</a>
-     &nbsp;
-     <a href="/register">Register</a>
-    <% } else { %>
-      <form class="form-inline ml-auto" action="/logout" method="POST">
-        Logged in as <%= users[user]["email"] %>
-        <button type="submit" class="btn btn-light ml-2">Logout</button>
-      </form>
-    <% } %>
+    
+    <div style="background-color: #8BC091; padding: 10px; border: 2px solid white; display: flex; align-items: center;">
+      <!-- DISPLAY LOGIN AND REGISTER LINKS IF NOT LOGGED IN -->
+      <% if (!users[user]) { %>
+        <div class="ml-auto">
+          <a href="/login" class="font-weight-bold" style="color: white; text-decoration: none;">Login</a>
+          <span class="font-weight-bold text-white"> / </span>
+          <a href="/register" class="font-weight-bold" style="color: white; text-decoration: none;">Register</a>
+        </div>
+      <!-- DISPLAY EMAIL AND LOGOUT BUTTON IF LOGGED IN -->
+      <% } else { %>
+        <div class="ml-auto d-flex align-items-center">
+          <span class="font-weight-bold text-white mr-2">Logged in as <%= users[user]["email"] %></span>
+          <form action="/logout" method="POST">
+            <button type="submit" class="btn btn-light">Logout</button>
+          </form>
+        </div>
+      <% } %>
+    </div>
   </nav>
 </header>
