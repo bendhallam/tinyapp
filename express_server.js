@@ -96,13 +96,13 @@ app.post("/urls/:id", (req, res) => {
 
 // Handle login
 app.post("/login", (req, res) => {
-  res.cookie("user", req.body.username);
+  res.cookie("user_id", req.body.username);
   res.redirect("/urls");
 });
 
 // Handle logout
 app.post("/logout", (req, res) => {
-  res.clearCookie("user");
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 
@@ -111,6 +111,17 @@ app.post("/logout", (req, res) => {
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
+
+//login page
+app.get("/login", (req, res) => {
+  const templateVars = { 
+    users,
+    id: req.params.id, 
+    longURL: urlDatabase[req.params.id],
+    user: req.cookies["user_id"] 
+  };
+  res.render("login", templateVars)
+})
 
 //redirect to long URL using shortened URL
 app.get("/u/:id", (req, res) => {
