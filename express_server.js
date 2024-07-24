@@ -22,7 +22,7 @@ const getUserFromEmail = (searchedEmail) => {
       return users[key];
     }
   }
-  return null;
+  return false;
 };
 
 // Object to store our users
@@ -87,12 +87,14 @@ app.post("/urls", (req, res) => {
 
 // Deleting a URL
 app.post("/urls/:id/delete", (req, res) => {
+  // Delete url from database
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
 
 // Updating a URL
 app.post("/urls/:id", (req, res) => {
+  // Update url in database
   urlDatabase[req.params.id] = req.body.longURL;
   res.redirect("/urls");
 });
@@ -100,20 +102,24 @@ app.post("/urls/:id", (req, res) => {
 // Logging in
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
+  // Get user from provided email if available, otherwise return error
   const userLoggingIn = getUserFromEmail(email);
-  if (getUserFromEmail(email) === null) {
+  if (userLoggingIn === null) {
     return res.status(403).send("No account found with this email address.");
   }
   const userID = userLoggingIn.id;
+  // Ensure correct password, otherwise return error
   if (password !== users[userID]["password"]) {
     return res.status(403).send("Wrong password.");
   }
+  // Start tracking cookies
   res.cookie("user_id", userID);
   res.redirect("/urls");
 });
 
 // Handle logout
 app.post("/logout", (req, res) => {
+  // Clear cookie of user information
   res.clearCookie("user_id");
   res.redirect("/urls");
 });
@@ -139,6 +145,7 @@ app.get("/login", (req, res) => {
 // URL redirect
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
+  // Redirect to long URL
   res.redirect(urlDatabase[id]);
 });
 
@@ -162,7 +169,7 @@ app.get("/urls/:id", (req, res) => {
     id: req.params.id,
     longURL: urlDatabase[req.params.id],
     user: req.cookies["user_id"]
-  }
+  };
   res.render("urls_show", templateVars);
 });
 
