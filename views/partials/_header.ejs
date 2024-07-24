@@ -18,7 +18,7 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
-    <% if (!username) { %>
+    <% if (!users[user]) { %>
       <form class="form-inline ml-auto" action="/login" method="POST">
         <div class="form-group">
           <input class="form-control" type="text" id="username" name="username" placeholder="Username">
@@ -27,7 +27,7 @@
       </form>
     <% } else { %>
       <form class="form-inline ml-auto" action="/logout" method="POST">
-        Logged in as <%= username %>
+        Logged in as <%= users[user]['email'] %>
         <button type="submit" class="btn btn-light ml-2">Logout</button>
       </form>
     <% } %>
