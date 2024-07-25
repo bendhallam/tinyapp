@@ -79,7 +79,20 @@ app.post("/register", (req, res) => {
 
 // Submitting a new URL
 app.post("/urls", (req, res) => {
-  // Generate shortened URL and add it to the URL database
+  // Check if user is logged in
+  if (!req.cookies["user_id"]) {
+    // User is not logged in, send HTML response
+    const html = `
+      <html>
+        <body>
+          <h3>You cannot shorten URLs because you are not logged in.</h3>
+          <p>Please <a href="/login">log in</a> or <a href="/register">register</a> to access this feature.</p>
+        </body>
+      </html>`;
+    return res.status(401).send(html);
+  }
+
+  // User is logged in, proceed with adding the new URL
   const newKey = generateRandomString();
   urlDatabase[newKey] = req.body.longURL;
   res.redirect(`/urls/${newKey}`);
@@ -133,32 +146,56 @@ app.get("/", (req, res) => {
 
 // Login page
 app.get("/login", (req, res) => {
-  const templateVars = {
-    users,
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: req.cookies["user_id"]
-  };
-  res.render("login", templateVars);
+  // Check if user is already logged in
+  if (req.cookies["user_id"]) {
+    // Redirect to /urls if logged in
+    res.redirect("/urls");
+  } else {
+    const templateVars = {
+      users,
+      id: req.params.id,
+      longURL: urlDatabase[req.params.id],
+      user: req.cookies["user_id"]
+    };
+    res.render("login", templateVars);
+  }
 });
 
 // URL redirect
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
+  // Check if id is in URL database
+  if (!urlDatabase[id]) {
+    // Send HTML error message if not
+    const html = `
+      <html>
+        <body>
+          <h3>Shortened URL id is not in database.</h3>
+          <p>Please look at our available <a href="/urls">shortened URLs.</p>
+        </body>
+      </html>`;
+    return res.status(401).send(html);
+  }
   // Redirect to long URL
   res.redirect(urlDatabase[id]);
 });
 
 // New URL page
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    users,
-    urls: urlDatabase,
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: req.cookies["user_id"]
-  };
-  res.render("urls_new", templateVars);
+  // Check if user is already logged in
+  if (!req.cookies["user_id"]) {
+    // Redirect to /urls if logged in
+    res.redirect("/urls");
+  } else {
+    const templateVars = {
+      users,
+      urls: urlDatabase,
+      id: req.params.id,
+      longURL: urlDatabase[req.params.id],
+      user: req.cookies["user_id"]
+    };
+    res.render("urls_new", templateVars);
+  }
 });
 
 // URL-specific update page
@@ -186,15 +223,22 @@ app.get("/urls", (req, res) => {
 });
 
 // Registration page
-app.get("/register", (req,res) => {
-  const templateVars = {
-    users,
-    urls: urlDatabase,
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: req.cookies["user_id"]
-  };
-  res.render("register", templateVars);
+app.get("/register", (req, res) => {
+  // Check if user is already logged in
+  if (req.cookies["user_id"]) {
+    // Redirect to /urls if logged in
+    res.redirect("/urls");
+  } else {
+    const templateVars = {
+      users,
+      urls: urlDatabase,
+      id: req.params.id,
+      longURL: urlDatabase[req.params.id],
+      user: req.cookies["user_id"]
+    };
+    // Render register page if not logged in
+    res.render("register", templateVars);
+  }
 });
 
 // Run server
