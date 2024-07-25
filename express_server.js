@@ -1,5 +1,6 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
+const bcrypt = require('bcryptjs')
 const app = express();
 app.use(cookieParser());
 const PORT = 8080;
@@ -90,7 +91,7 @@ app.post("/register", (req, res) => {
   users[newUserID] = {
     id: newUserID,
     email: email,
-    password: password
+    password: bcrypt.hashSync(password, 10)
   };
   // Track new cookie
   res.cookie("user_id", newUserID);
@@ -202,7 +203,7 @@ app.post("/login", (req, res) => {
   }
   const userID = userLoggingIn.id;
   // Ensure correct password, otherwise return error
-  if (password !== users[userID]["password"]) {
+  if (!bcrypt.compareSync(password, users[userID]["password"])) {
     return res.status(403).send("Wrong password.");
   }
   // Start tracking cookies
