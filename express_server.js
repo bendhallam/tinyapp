@@ -161,6 +161,34 @@ app.post("/urls/:id/delete", (req, res) => {
 
 // Updating a URL
 app.post("/urls/:id", (req, res) => {
+  // URL doesn't exist HTML
+  const notFound = `
+      <html>
+        <body>
+          <h3>URL does not exist.</h3>
+          <p>Please either create a <a href="/urls/new">new URL</a> or see <a href="/urls">your URLs</a>.</p>
+        </body>
+      </html>`;
+  // Permission error HTML
+  const permissionError = `
+      <html>
+        <body>
+          <h3>You do not have permission to update this URL.</h3>
+          <p>Please either <a href="/login">login</a> or see <a href="/urls">your URLs</a>.</p>
+        </body>
+      </html>`;
+  // Check if id exists
+  if (!urlDatabase[req.params.id]) {
+    return res.status(404).send(notFound); // Not found
+  }
+  // Check if user is logged in
+  if (!req.cookies["user_id"]) {
+    return res.status(401).send(permissionError); // Permission error
+  }
+  // Check if URL belongs to user
+  if (req.cookies["user_id"] !== urlDatabase[req.params.id]["userID"]) {
+    return res.status(401).send(permissionError); // Permission error
+  }
   // Update url in database
   urlDatabase[req.params.id] = req.body.longURL;
   res.redirect("/urls");
