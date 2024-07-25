@@ -15,6 +15,8 @@ const generateRandomString = () => {
   return result;
 };
 
+
+
 // Find a user object from email
 const getUserFromEmail = (searchedEmail) => {
   for (let key in users) {
@@ -23,6 +25,20 @@ const getUserFromEmail = (searchedEmail) => {
     }
   }
   return false;
+};
+
+// Function to filter URLs for specific user
+const urlsForUser = (userID) => {
+  const usersURLs = {};
+  for (let id in urlDatabase) {
+    if (urlDatabase[id]["userID"] === userID) {
+      usersURLs[id] = {
+        "userID": userID,
+        "longURL": urlDatabase[id]["longURL"]
+      };
+    }
+  }
+  return usersURLs;
 };
 
 // Object to store our users
@@ -39,6 +55,7 @@ const users = {
   },
 };
 
+
 // Configure view engine to render templates
 app.set("view engine", "ejs");
 
@@ -48,10 +65,15 @@ app.use(express.urlencoded({ extended: true }));
 
 // Object to store our short and long url pairs
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xL": "http://www.google.com",
+  b2xVn2: {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "userRandomID"
+  },
+  "9sm5xL": {
+    longURL: "http://www.google.com",
+    userID: "userRandomID"
+  }
 };
-
 
 // POST REQUESTS
 // Registering a new user
@@ -94,12 +116,44 @@ app.post("/urls", (req, res) => {
 
   // User is logged in, proceed with adding the new URL
   const newKey = generateRandomString();
-  urlDatabase[newKey] = req.body.longURL;
+  urlDatabase[newKey] = {
+    longURL: req.body.longURL,
+    userID: req.cookies["user_id"]
+  };
+  console.log(urlDatabase);
   res.redirect(`/urls/${newKey}`);
 });
 
 // Deleting a URL
 app.post("/urls/:id/delete", (req, res) => {
+  // URL doesn't exist HTML
+  const notFound = `
+      <html>
+        <body>
+          <h3>URL does not exist.</h3>
+          <p>Please either create a <a href="/urls/new">new URL</a> or see <a href="/urls">your URLs</a>.</p>
+        </body>
+      </html>`;
+  // Permission error HTML
+  const permissionError = `
+      <html>
+        <body>
+          <h3>You do not have permission to delete this URL.</h3>
+          <p>Please either <a href="/login">login</a> or see <a href="/urls">your URLs</a>.</p>
+        </body>
+      </html>`;
+  // Check if id exists
+  if (!urlDatabase[req.params.id]) {
+    return res.status(404).send(notFound); // Not found
+  }
+  // Check if user is logged in
+  if (!req.cookies["user_id"]) {
+    return res.status(401).send(permissionError); // Permission error
+  }
+  // Check if URL belongs to user
+  if (req.cookies["user_id"] !== urlDatabase[req.params.id]["userID"]) {
+    return res.status(401).send(permissionError); // Permission error
+  }
   // Delete url from database
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
@@ -174,22 +228,22 @@ app.get("/u/:id", (req, res) => {
           <p>Please look at our available <a href="/urls">shortened URLs.</p>
         </body>
       </html>`;
-    return res.status(401).send(html);
+    return res.status(404).send(html);
   }
   // Redirect to long URL
-  res.redirect(urlDatabase[id]);
+  res.redirect(urlDatabase[id].longURL);
 });
 
 // New URL page
 app.get("/urls/new", (req, res) => {
   // Check if user is already logged in
   if (!req.cookies["user_id"]) {
-    // Redirect to /urls if logged in
+    // Redirect to /urls if not logged in
     res.redirect("/urls");
   } else {
     const templateVars = {
       users,
-      urls: urlDatabase,
+      urls: urlsForUser(req.cookies["user_id"]),
       id: req.params.id,
       longURL: urlDatabase[req.params.id],
       user: req.cookies["user_id"]
@@ -200,9 +254,45 @@ app.get("/urls/new", (req, res) => {
 
 // URL-specific update page
 app.get("/urls/:id", (req, res) => {
+  // Check if id exists
+  if (!urlDatabase[req.params.id]) {
+    // Send HTML error message if not
+    const html = `
+      <html>
+        <body>
+          <h3>URL does not exist.</h3>
+          <p>Please either <a href="/urls/new">create new URL</a> or see <a href="/urls">your URLs</a>.</p>
+        </body>
+      </html>`;
+    return res.status(401).send(html);
+  }
+  // Check if user is currently logged in
+  if (!req.cookies["user_id"]) {
+    // Send HTML error message if not
+    const html = `
+      <html>
+        <body>
+          <h3>Only logged in users can see shortened URLs.</h3>
+          <p>Please either <a href="/login">login</a> or <a href="/register">register</a> to see shortened URLs.</p>
+        </body>
+      </html>`;
+    return res.status(401).send(html);
+  }
+  // Check if URL belongs to current user
+  if (req.cookies["user_id"] !== urlDatabase[req.params.id]["userID"]) {
+    // Send HTML error message if not
+    const html = `
+      <html>
+        <body>
+          <h3>URL does not belong to current user.</h3>
+          <p>See your urls <a href="/urls">here</a>.</p>
+        </body>
+      </html>`;
+    return res.status(401).send(html);
+  }
   const templateVars = {
     users,
-    urls: urlDatabase,
+    urls: urlsForUser(req.cookies["user_id"]),
     id: req.params.id,
     longURL: urlDatabase[req.params.id],
     user: req.cookies["user_id"]
@@ -212,9 +302,21 @@ app.get("/urls/:id", (req, res) => {
 
 // Index of URLs
 app.get("/urls", (req, res) => {
+  // Check if user is logged in
+  if (!req.cookies["user_id"]) {
+    // Send HTML error message if not
+    const html = `
+      <html>
+        <body>
+          <h3>Only logged in users can see shortened URLs.</h3>
+          <p>Please either <a href="/login">login</a> or <a href="/register">register</a> to see shortened URLs.</p>
+        </body>
+      </html>`;
+    return res.status(401).send(html);
+  }
   const templateVars = {
     users,
-    urls: urlDatabase,
+    urls: urlsForUser(req.cookies["user_id"]),
     id: req.params.id,
     longURL: urlDatabase[req.params.id],
     user: req.cookies["user_id"]
@@ -231,7 +333,7 @@ app.get("/register", (req, res) => {
   } else {
     const templateVars = {
       users,
-      urls: urlDatabase,
+      urls: urlsForUser(req.cookies["user_id"]),
       id: req.params.id,
       longURL: urlDatabase[req.params.id],
       user: req.cookies["user_id"]
