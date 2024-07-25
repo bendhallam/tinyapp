@@ -1,8 +1,13 @@
 const express = require("express");
-const cookieParser = require("cookie-parser");
+const cookieSession = require("cookie-session")
 const bcrypt = require('bcryptjs')
 const app = express();
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ["secret_ingredient"],
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}))
 const PORT = 8080;
 
 // Shortened URL string generator
@@ -45,12 +50,12 @@ const users = {
   userRandomID: {
     id: "userRandomID",
     email: "a@example.com",
-    password: "aaa",
+    password: bcrypt.hashSync("aaa", 10),
   },
   user2RandomID: {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk",
+    password: bcrypt.hashSync("bbb", 10),
   },
 };
 
@@ -94,14 +99,14 @@ app.post("/register", (req, res) => {
     password: bcrypt.hashSync(password, 10)
   };
   // Track new cookie
-  res.cookie("user_id", newUserID);
+  req.session.user_id = newUserID;
   res.redirect("/urls");
 });
 
 // Submitting a new URL
 app.post("/urls", (req, res) => {
   // Check if user is logged in
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     // User is not logged in, send HTML response
     const html = `
       <html>
@@ -117,7 +122,7 @@ app.post("/urls", (req, res) => {
   const newKey = generateRandomString();
   urlDatabase[newKey] = {
     longURL: req.body.longURL,
-    userID: req.cookies["user_id"]
+    userID: req.session.user_id
   };
   console.log(urlDatabase);
   res.redirect(`/urls/${newKey}`);
@@ -146,11 +151,11 @@ app.post("/urls/:id/delete", (req, res) => {
     return res.status(404).send(notFound); // Not found
   }
   // Check if user is logged in
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     return res.status(401).send(permissionError); // Permission error
   }
   // Check if URL belongs to user
-  if (req.cookies["user_id"] !== urlDatabase[req.params.id]["userID"]) {
+  if (req.session.user_id !== urlDatabase[req.params.id]["userID"]) {
     return res.status(401).send(permissionError); // Permission error
   }
   // Delete url from database
@@ -181,11 +186,11 @@ app.post("/urls/:id", (req, res) => {
     return res.status(404).send(notFound); // Not found
   }
   // Check if user is logged in
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     return res.status(401).send(permissionError); // Permission error
   }
   // Check if URL belongs to user
-  if (req.cookies["user_id"] !== urlDatabase[req.params.id]["userID"]) {
+  if (req.session.user_id !== urlDatabase[req.params.id]["userID"]) {
     return res.status(401).send(permissionError); // Permission error
   }
   // Update url in database
@@ -207,14 +212,14 @@ app.post("/login", (req, res) => {
     return res.status(403).send("Wrong password.");
   }
   // Start tracking cookies
-  res.cookie("user_id", userID);
+  req.session.user_id = userID;
   res.redirect("/urls");
 });
 
 // Handle logout
 app.post("/logout", (req, res) => {
   // Clear cookie of user information
-  res.clearCookie("user_id");
+  req.session = null
   res.redirect("/urls");
 });
 
@@ -228,7 +233,7 @@ app.get("/", (req, res) => {
 // Login page
 app.get("/login", (req, res) => {
   // Check if user is already logged in
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     // Redirect to /urls if logged in
     res.redirect("/urls");
   } else {
@@ -236,7 +241,7 @@ app.get("/login", (req, res) => {
       users,
       id: req.params.id,
       longURL: urlDatabase[req.params.id],
-      user: req.cookies["user_id"]
+      user: req.session.user_id
     };
     res.render("login", templateVars);
   }
@@ -264,16 +269,16 @@ app.get("/u/:id", (req, res) => {
 // New URL page
 app.get("/urls/new", (req, res) => {
   // Check if user is already logged in
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     // Redirect to /urls if not logged in
     res.redirect("/urls");
   } else {
     const templateVars = {
       users,
-      urls: urlsForUser(req.cookies["user_id"]),
+      urls: urlsForUser(req.session.user_id),
       id: req.params.id,
       longURL: urlDatabase[req.params.id],
-      user: req.cookies["user_id"]
+      user: req.session.user_id
     };
     res.render("urls_new", templateVars);
   }
@@ -294,7 +299,7 @@ app.get("/urls/:id", (req, res) => {
     return res.status(401).send(html);
   }
   // Check if user is currently logged in
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     // Send HTML error message if not
     const html = `
       <html>
@@ -306,7 +311,7 @@ app.get("/urls/:id", (req, res) => {
     return res.status(401).send(html);
   }
   // Check if URL belongs to current user
-  if (req.cookies["user_id"] !== urlDatabase[req.params.id]["userID"]) {
+  if (req.session.user_id !== urlDatabase[req.params.id]["userID"]) {
     // Send HTML error message if not
     const html = `
       <html>
@@ -319,10 +324,10 @@ app.get("/urls/:id", (req, res) => {
   }
   const templateVars = {
     users,
-    urls: urlsForUser(req.cookies["user_id"]),
+    urls: urlsForUser(req.session.user_id),
     id: req.params.id,
     longURL: urlDatabase[req.params.id],
-    user: req.cookies["user_id"]
+    user: req.session.user_id
   };
   res.render("urls_show", templateVars);
 });
@@ -330,7 +335,7 @@ app.get("/urls/:id", (req, res) => {
 // Index of URLs
 app.get("/urls", (req, res) => {
   // Check if user is logged in
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     // Send HTML error message if not
     const html = `
       <html>
@@ -343,10 +348,10 @@ app.get("/urls", (req, res) => {
   }
   const templateVars = {
     users,
-    urls: urlsForUser(req.cookies["user_id"]),
+    urls: urlsForUser(req.session.user_id),
     id: req.params.id,
     longURL: urlDatabase[req.params.id],
-    user: req.cookies["user_id"]
+    user: req.session.user_id
   };
   res.render("urls_index", templateVars);
 });
@@ -354,16 +359,16 @@ app.get("/urls", (req, res) => {
 // Registration page
 app.get("/register", (req, res) => {
   // Check if user is already logged in
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     // Redirect to /urls if logged in
     res.redirect("/urls");
   } else {
     const templateVars = {
       users,
-      urls: urlsForUser(req.cookies["user_id"]),
+      urls: urlsForUser(req.session.user_id),
       id: req.params.id,
       longURL: urlDatabase[req.params.id],
-      user: req.cookies["user_id"]
+      user: req.session.user_id
     };
     // Render register page if not logged in
     res.render("register", templateVars);
