@@ -15,8 +15,6 @@ const generateRandomString = () => {
   return result;
 };
 
-
-
 // Find a user object from email
 const getUserFromEmail = (searchedEmail) => {
   for (let key in users) {
@@ -24,7 +22,7 @@ const getUserFromEmail = (searchedEmail) => {
       return users[key];
     }
   }
-  return false;
+  return null;
 };
 
 // Function to filter URLs for specific user
@@ -190,7 +188,7 @@ app.post("/urls/:id", (req, res) => {
     return res.status(401).send(permissionError); // Permission error
   }
   // Update url in database
-  urlDatabase[req.params.id] = req.body.longURL;
+  urlDatabase[req.params.id]["longURL"] = req.body.longURL;
   res.redirect("/urls");
 });
 
