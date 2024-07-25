@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieSession = require("cookie-session")
 const bcrypt = require('bcryptjs')
+const { getUserByEmail } = require("./helpers")
 const app = express();
 app.use(cookieSession({
   name: 'session',
@@ -19,16 +20,6 @@ const generateRandomString = () => {
     result += characters.charAt(randomIndex);
   }
   return result;
-};
-
-// Find a user object from email
-const getUserFromEmail = (searchedEmail) => {
-  for (let key in users) {
-    if (users[key].email === searchedEmail) {
-      return users[key];
-    }
-  }
-  return null;
 };
 
 // Function to filter URLs for specific user
@@ -88,7 +79,7 @@ app.post("/register", (req, res) => {
     return res.status(400).send("Email or password cannot be blank.");
   }
   // Check if email is already in use
-  if (getUserFromEmail(email) !== null) {
+  if (getUserByEmail(email, users) !== null) {
     return res.status(400).send("Email already in use.");
   }
   // Create a new user with a generated ID
@@ -124,7 +115,6 @@ app.post("/urls", (req, res) => {
     longURL: req.body.longURL,
     userID: req.session.user_id
   };
-  console.log(urlDatabase);
   res.redirect(`/urls/${newKey}`);
 });
 
@@ -202,11 +192,11 @@ app.post("/urls/:id", (req, res) => {
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   // Get user from provided email if available, otherwise return error
-  const userLoggingIn = getUserFromEmail(email);
+  const userLoggingIn = getUserByEmail(email, users);
   if (userLoggingIn === null) {
     return res.status(403).send("No account found with this email address.");
   }
-  const userID = userLoggingIn.id;
+  const userID = users[userLoggingIn].id;
   // Ensure correct password, otherwise return error
   if (!bcrypt.compareSync(password, users[userID]["password"])) {
     return res.status(403).send("Wrong password.");
