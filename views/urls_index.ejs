@@ -49,11 +49,12 @@
                 </form>
               </td>
               <!-- DELETE URL BUTTON -->
+              <!-- NOTE: Updated to user RESTful conventions -->
               <td>
-                <form method="POST" action="/urls/<%= id %>/delete">
-                  <button type="submit" class="btn btn-primary" 
-                    style="color: red; border-color: red; background-color: white">
-                  Delete</button>
+                <form method="POST" action="/urls/<%= id %>?_method=DELETE">
+                  <input type="hidden" name="_method" value="DELETE">
+                  <button type="submit" class="btn btn-primary"
+                    style="color: red; border-color: red; background-color: white">Delete</button>
                 </form>
               </td>
             </tr>

@@ -14,12 +14,16 @@ const errors = require("./errors");
 const express = require("express");
 const cookieSession = require("cookie-session");
 const bcrypt = require('bcryptjs');
+const methodOverride = require("method-override")
 const app = express();
 app.use(cookieSession({
   name: 'session',
   keys: [KEY],
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
+
+// override with POST having ?_method=DELETE
+app.use(methodOverride('_method'))
 
 // Configure view engine to render templates
 app.set("view engine", "ejs");
@@ -75,7 +79,7 @@ app.get("/urls/:id", ensureLoggedIn, ensurePermission, setupTemplateVars, (req, 
   // Check if id exists
   if (!urlDatabase[req.params.id]) {
     // Send HTML error message if not
-    return res.status(401).send(errors.notFound);
+    return res.status(404).send(errors.notFound);
   }
   res.render("urls_show", req.templateVars);
 });
@@ -144,14 +148,14 @@ app.post("/urls", ensureLoggedIn, (req, res) => {
 });
 
 // Deleting a URL
-app.post("/urls/:id/delete", ensureLoggedIn, ensurePermission, (req, res) => {
+app.delete("/urls/:id", ensureLoggedIn, ensurePermission, (req, res) => {
   // Delete url from database
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
 
 // Updating a URL
-app.post("/urls/:id", ensureLoggedIn, ensurePermission, (req, res) => {
+app.put("/urls/:id", ensureLoggedIn, ensurePermission, (req, res) => {
   // Update url in database
   urlDatabase[req.params.id]["longURL"] = req.body.longURL;
   res.redirect("/urls");
@@ -163,12 +167,12 @@ app.post("/login", (req, res) => {
   // Get user from provided email if available, otherwise return error
   const userLoggingIn = getUserByEmail(email, users);
   if (userLoggingIn === null) {
-    return res.status(403).send("No account found with this email address.");
+    return res.status(404).send("No account found with this email address.");
   }
   const userID = userLoggingIn.id;
   // Ensure correct password, otherwise return error
   if (!bcrypt.compareSync(password, users[userID]["password"])) {
-    return res.status(403).send("Wrong password.");
+    return res.status(400).send("Wrong password.");
   }
   // Start tracking cookies
   req.session.user_id = userID;
