@@ -1,3 +1,5 @@
+const { urlDatabase } = require("./data_sets")
+
 // Find a user object from email
 const getUserByEmail = (searchedEmail, database) => {
   for (let key in database) {
@@ -33,5 +35,25 @@ const urlsForUser = (userID, database) => {
   return usersURLs;
 };
 
+// Middleware to check if user is logged in
+const ensureLoggedIn = (req, res, next) => {
+  if (!req.session.user_id) {
+    // User is not logged in, send HTML response
+    return res.status(401).send(errors.notLoggedIn);
+  }
+  // User is logged in, proceed to the next middleware or route handler
+  next();
+};
 
-module.exports = { getUserByEmail, generateRandomString, urlsForUser }
+const ensurePermission = (req, res, next) => {
+  const url = urlDatabase[req.params.id];
+  if (!url) {
+    return res.status(404).send(errors.notFound); // Not found
+  }
+  if (req.session.user_id !== url.userID) {
+    return res.status(401).send(errors.permission); // Permission error
+  }
+  next();
+};
+
+module.exports = { getUserByEmail, generateRandomString, urlsForUser, ensureLoggedIn, ensurePermission }

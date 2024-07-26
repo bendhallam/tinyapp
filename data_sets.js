@@ -1,16 +1,17 @@
 const bcrypt = require('bcryptjs')
+const { SALTROUNDS } = require("./constants")
 
 // Object to store our users
 const users = {
   userRandomID: {
     id: "userRandomID",
     email: "a@example.com",
-    password: bcrypt.hashSync("aaa", 10),
+    password: bcrypt.hashSync("aaa", SALTROUNDS),
   },
   user2RandomID: {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: bcrypt.hashSync("bbb", 10),
+    password: bcrypt.hashSync("bbb", SALTROUNDS),
   },
 };
 

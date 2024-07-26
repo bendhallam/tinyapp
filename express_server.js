@@ -1,8 +1,9 @@
 const express = require("express");
 const cookieSession = require("cookie-session")
 const bcrypt = require('bcryptjs')
-const { getUserByEmail, generateRandomString, urlsForUser } = require("./helpers")
+const { getUserByEmail, generateRandomString, urlsForUser, ensureLoggedIn, ensurePermission } = require("./helpers")
 const { users, urlDatabase } = require("./data_sets")
+const { PORT, SALTROUNDS } = require("./constants")
 const errors = require("./errors")
 const app = express();
 app.use(cookieSession({
@@ -11,19 +12,12 @@ app.use(cookieSession({
   // Cookie Options
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }))
-const PORT = 8080;
-
-
-
 
 // Configure view engine to render templates
 app.set("view engine", "ejs");
 
 // Parse incoming requests
 app.use(express.urlencoded({ extended: true }));
-
-
-
 
 // POST REQUESTS
 // Registering a new user
@@ -46,7 +40,7 @@ app.post("/register", (req, res) => {
   users[newUserID] = {
     id: newUserID,
     email: email,
-    password: bcrypt.hashSync(password, 10)
+    password: bcrypt.hashSync(password, SALTROUNDS)
   };
   // Track new cookie
   req.session.user_id = newUserID;
@@ -54,13 +48,7 @@ app.post("/register", (req, res) => {
 });
 
 // Submitting a new URL
-app.post("/urls", (req, res) => {
-  // Check if user is logged in
-  if (!req.session.user_id) {
-    // User is not logged in, send HTML response
-    return res.status(401).send(errors.notLoggedIn);
-  }
-
+app.post("/urls", ensureLoggedIn, (req, res) => {
   // User is logged in, proceed with adding the new URL
   const newKey = generateRandomString();
   urlDatabase[newKey] = {
@@ -71,7 +59,7 @@ app.post("/urls", (req, res) => {
 });
 
 // Deleting a URL
-app.post("/urls/:id/delete", (req, res) => {
+app.post("/urls/:id/delete", ensureLoggedIn, (req, res) => {
   // Check if id exists
   if (!urlDatabase[req.params.id]) {
     return res.status(404).send(errors.notFound); // Not found
@@ -90,7 +78,7 @@ app.post("/urls/:id/delete", (req, res) => {
 });
 
 // Updating a URL
-app.post("/urls/:id", (req, res) => {
+app.post("/urls/:id", ensureLoggedIn, (req, res) => {
   // Check if id exists
   if (!urlDatabase[req.params.id]) {
     return res.status(404).send(errors.notFound); // Not found
@@ -170,39 +158,23 @@ app.get("/u/:id", (req, res) => {
 });
 
 // New URL page
-app.get("/urls/new", (req, res) => {
-  // Check if user is already logged in
-  if (!req.session.user_id) {
-    // Redirect to /urls if not logged in
-    res.redirect("/urls");
-  } else {
-    const templateVars = {
-      users,
-      urls: urlsForUser(req.session.user_id, urlDatabase),
-      id: req.params.id,
-      longURL: urlDatabase[req.params.id],
-      user: req.session.user_id
-    };
-    res.render("urls_new", templateVars);
-  }
+app.get("/urls/new", ensureLoggedIn, (req, res) => {
+  const templateVars = {
+    users,
+    urls: urlsForUser(req.session.user_id, urlDatabase),
+    id: req.params.id,
+    longURL: urlDatabase[req.params.id],
+    user: req.session.user_id
+  };
+  res.render("urls_new", templateVars);
 });
 
 // URL-specific update page
-app.get("/urls/:id", (req, res) => {
+app.get("/urls/:id", ensureLoggedIn, ensurePermission, (req, res) => {
   // Check if id exists
   if (!urlDatabase[req.params.id]) {
     // Send HTML error message if not
     return res.status(401).send(errors.notFound);
-  }
-  // Check if user is currently logged in
-  if (!req.session.user_id) {
-    // Send HTML error message if not
-    return res.status(401).send(errors.notLoggedIn);
-  }
-  // Check if URL belongs to current user
-  if (req.session.user_id !== urlDatabase[req.params.id]["userID"]) {
-    // Send HTML error message if not
-    return res.status(401).send(errors.permission);
   }
   const templateVars = {
     users,
@@ -215,12 +187,7 @@ app.get("/urls/:id", (req, res) => {
 });
 
 // Index of URLs
-app.get("/urls", (req, res) => {
-  // Check if user is logged in
-  if (!req.session.user_id) {
-    // Send HTML error message if not
-    return res.status(401).send(errors.notLoggedIn);
-  }
+app.get("/urls", ensureLoggedIn, (req, res) => {
   const templateVars = {
     users,
     urls: urlsForUser(req.session.user_id, urlDatabase),

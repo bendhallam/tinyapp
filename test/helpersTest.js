@@ -26,18 +26,3 @@ describe('getUserByEmail', function() {
     assert.equal(user, expectedUserID);
   });
 });
-
-
-
-describe('urlsForUser', function() {
-  it('should return an array of urls', function() {
-    const user = getUserByEmail("user@example.com", testUsers);
-    const expectedUserID = "userRandomID";
-    assert.equal(user, expectedUserID);
-  });
-  it('should return null if searched email does not exist', function() {
-    const user = getUserByEmail("notrealperson@example.com", testUsers);
-    const expectedUserID = null;
-    assert.equal(user, expectedUserID);
-  });
-});
