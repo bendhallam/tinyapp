@@ -23,6 +23,7 @@
             <h5 class="card-title">TinyURL for: <%= urls[id].longURL %></h5>
             <p class="card-text">
                 Short URL ID: <a href="/u/<%= id %>"><%= id %></a><br>
+                Number of Visits: <%= urls[id].visits %><br>
                 Create a new URL: <a href="/urls/new">Here</A>
                 <!-- UPDATE URL FORM -->
                 <!-- NOTE: Updated to user RESTful conventions -->

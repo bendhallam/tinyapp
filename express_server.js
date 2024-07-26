@@ -103,12 +103,6 @@ app.get("/register", (req, res, next) => {
   }
 });
 
-// Run server
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
-
-
 // POST REQUESTS
 // Registering a new user
 app.post("/register", (req, res) => {
@@ -142,8 +136,10 @@ app.post("/urls", ensureLoggedIn, (req, res) => {
   const newKey = generateRandomString();
   urlDatabase[newKey] = {
     longURL: req.body.longURL,
-    userID: req.session.user_id
+    userID: req.session.user_id,
+    visits: 0
   };
+  urlDatabase[newKey].visits += 1;
   res.redirect(`/urls/${newKey}`);
 });
 
@@ -184,4 +180,9 @@ app.post("/logout", (req, res) => {
   // Clear cookie of user information
   req.session = null;
   res.redirect("/urls");
+});
+
+// Run server
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
 });
