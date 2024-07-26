@@ -240,7 +240,7 @@ app.get("/register", (req, res) => {
   } else {
     const templateVars = {
       users,
-      urls: urlsForUser(req.session.user_id, urlDatabse),
+      urls: urlsForUser(req.session.user_id, urlDatabase),
       id: req.params.id,
       longURL: urlDatabase[req.params.id],
       user: req.session.user_id
