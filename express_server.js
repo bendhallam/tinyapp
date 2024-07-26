@@ -49,7 +49,6 @@ app.post("/register", (req, res) => {
 
 // Submitting a new URL
 app.post("/urls", ensureLoggedIn, (req, res) => {
-  // User is logged in, proceed with adding the new URL
   const newKey = generateRandomString();
   urlDatabase[newKey] = {
     longURL: req.body.longURL,
