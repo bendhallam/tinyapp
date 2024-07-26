@@ -1,5 +1,5 @@
-const bcrypt = require('bcryptjs')
-const { SALTROUNDS } = require("./constants")
+const bcrypt = require('bcryptjs');
+const { SALTROUNDS } = require("./constants");
 
 // Object to store our users
 const users = {
@@ -27,4 +27,4 @@ const urlDatabase = {
   }
 };
 
-module.exports = { users, urlDatabase }
+module.exports = { users, urlDatabase };

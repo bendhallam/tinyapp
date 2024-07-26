@@ -1,23 +1,109 @@
+// Helper files
+const {
+  getUserByEmail,
+  generateRandomString,
+  ensureLoggedIn,
+  ensurePermission,
+  setupTemplateVars
+} = require("./helpers");
+const { users, urlDatabase } = require("./data_sets");
+const { PORT, SALTROUNDS, KEY } = require("./constants");
+const errors = require("./errors");
+
+// Dependencies
 const express = require("express");
-const cookieSession = require("cookie-session")
-const bcrypt = require('bcryptjs')
-const { getUserByEmail, generateRandomString, urlsForUser, ensureLoggedIn, ensurePermission } = require("./helpers")
-const { users, urlDatabase } = require("./data_sets")
-const { PORT, SALTROUNDS } = require("./constants")
-const errors = require("./errors")
+const cookieSession = require("cookie-session");
+const bcrypt = require('bcryptjs');
 const app = express();
 app.use(cookieSession({
   name: 'session',
-  keys: ["secret_ingredient"],
-  // Cookie Options
+  keys: [KEY],
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
-}))
+}));
 
 // Configure view engine to render templates
 app.set("view engine", "ejs");
 
 // Parse incoming requests
 app.use(express.urlencoded({ extended: true }));
+
+// GET REQUESTS
+// Main page
+app.get("/", (req, res) => {
+  // If user is logged in, redirect them to the urls index
+  if (req.session.user_id) {
+    res.redirect("/urls");
+  // Otherwise redirect them to the login page
+  } else {
+    res.redirect("/login");
+  }
+});
+
+// Login page
+app.get("/login", (req, res, next) => {
+  // Check if user is already logged in
+  if (req.session.user_id) {
+    // Redirect to /urls if logged in
+    res.redirect("/urls");
+  // If not logged in, render the login form
+  } else {
+    setupTemplateVars(req, res, () => {
+      res.render("login", req.templateVars);
+    });
+  }
+});
+
+// URL redirect
+app.get("/u/:id", (req, res) => {
+  const id = req.params.id;
+  // Check if id is in URL database
+  if (!urlDatabase[id]) {
+    // Send HTML error message if not
+    return res.status(404).send(errors.notFound);
+  }
+  // Redirect to long URL
+  res.redirect(urlDatabase[id].longURL);
+});
+
+// New URL page
+app.get("/urls/new", ensureLoggedIn, setupTemplateVars, (req, res) => {
+  res.render("urls_new", req.templateVars);
+});
+
+// URL-specific update page
+app.get("/urls/:id", ensureLoggedIn, ensurePermission, setupTemplateVars, (req, res) => {
+  // Check if id exists
+  if (!urlDatabase[req.params.id]) {
+    // Send HTML error message if not
+    return res.status(401).send(errors.notFound);
+  }
+  res.render("urls_show", req.templateVars);
+});
+
+// Index of URLs
+app.get("/urls", ensureLoggedIn, setupTemplateVars, (req, res) => {
+  res.render("urls_index", req.templateVars);
+});
+
+// Registration page
+app.get("/register", (req, res, next) => {
+  // Check if user is already logged in
+  if (req.session.user_id) {
+    // Redirect to /urls if logged in
+    res.redirect("/urls");
+  } else {
+    // Set up templateVars and render register page
+    setupTemplateVars(req, res, () => {
+      res.render("register", req.templateVars);
+    });
+  }
+});
+
+// Run server
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
+});
+
 
 // POST REQUESTS
 // Registering a new user
@@ -32,11 +118,11 @@ app.post("/register", (req, res) => {
     return res.status(400).send("Email already in use.");
   }
   // Create a new user with a generated ID
-  const newUserID = generateRandomString();
+  let newUserID = generateRandomString();
   // if generated ID already exists, retry
   while (users[newUserID]) {
-    newUserID = generateRandomString()
-  };
+    newUserID = generateRandomString();
+  }
   users[newUserID] = {
     id: newUserID,
     email: email,
@@ -58,38 +144,14 @@ app.post("/urls", ensureLoggedIn, (req, res) => {
 });
 
 // Deleting a URL
-app.post("/urls/:id/delete", ensureLoggedIn, (req, res) => {
-  // Check if id exists
-  if (!urlDatabase[req.params.id]) {
-    return res.status(404).send(errors.notFound); // Not found
-  }
-  // Check if user is logged in
-  if (!req.session.user_id) {
-    return res.status(401).send(errors.permission); // Permission error
-  }
-  // Check if URL belongs to user
-  if (req.session.user_id !== urlDatabase[req.params.id]["userID"]) {
-    return res.status(401).send(errors.permission); // Permission error
-  }
+app.post("/urls/:id/delete", ensureLoggedIn, ensurePermission, (req, res) => {
   // Delete url from database
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
 
 // Updating a URL
-app.post("/urls/:id", ensureLoggedIn, (req, res) => {
-  // Check if id exists
-  if (!urlDatabase[req.params.id]) {
-    return res.status(404).send(errors.notFound); // Not found
-  }
-  // Check if user is logged in
-  if (!req.session.user_id) {
-    return res.status(401).send(errors.permission); // Permission error
-  }
-  // Check if URL belongs to user
-  if (req.session.user_id !== urlDatabase[req.params.id]["userID"]) {
-    return res.status(401).send(errors.permission); // Permission error
-  }
+app.post("/urls/:id", ensureLoggedIn, ensurePermission, (req, res) => {
   // Update url in database
   urlDatabase[req.params.id]["longURL"] = req.body.longURL;
   res.redirect("/urls");
@@ -116,107 +178,6 @@ app.post("/login", (req, res) => {
 // Handle logout
 app.post("/logout", (req, res) => {
   // Clear cookie of user information
-  req.session = null
+  req.session = null;
   res.redirect("/urls");
-});
-
-
-// GET REQUESTS
-// Main page
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
-// Login page
-app.get("/login", (req, res) => {
-  // Check if user is already logged in
-  if (req.session.user_id) {
-    // Redirect to /urls if logged in
-    res.redirect("/urls");
-  } else {
-    const templateVars = {
-      users,
-      id: req.params.id,
-      longURL: urlDatabase[req.params.id],
-      user: req.session.user_id
-    };
-    res.render("login", templateVars);
-  }
-});
-
-// URL redirect
-app.get("/u/:id", (req, res) => {
-  const id = req.params.id;
-  // Check if id is in URL database
-  if (!urlDatabase[id]) {
-    // Send HTML error message if not
-    return res.status(404).send(errors.notFound);
-  }
-  // Redirect to long URL
-  res.redirect(urlDatabase[id].longURL);
-});
-
-// New URL page
-app.get("/urls/new", ensureLoggedIn, (req, res) => {
-  const templateVars = {
-    users,
-    urls: urlsForUser(req.session.user_id, urlDatabase),
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: req.session.user_id
-  };
-  res.render("urls_new", templateVars);
-});
-
-// URL-specific update page
-app.get("/urls/:id", ensureLoggedIn, ensurePermission, (req, res) => {
-  // Check if id exists
-  if (!urlDatabase[req.params.id]) {
-    // Send HTML error message if not
-    return res.status(401).send(errors.notFound);
-  }
-  const templateVars = {
-    users,
-    urls: urlsForUser(req.session.user_id, urlDatabase),
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: req.session.user_id
-  };
-  res.render("urls_show", templateVars);
-});
-
-// Index of URLs
-app.get("/urls", ensureLoggedIn, (req, res) => {
-  const templateVars = {
-    users,
-    urls: urlsForUser(req.session.user_id, urlDatabase),
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: req.session.user_id
-  };
-  res.render("urls_index", templateVars);
-});
-
-// Registration page
-app.get("/register", (req, res) => {
-  // Check if user is already logged in
-  if (req.session.user_id) {
-    // Redirect to /urls if logged in
-    res.redirect("/urls");
-  } else {
-    const templateVars = {
-      users,
-      urls: urlsForUser(req.session.user_id, urlDatabase),
-      id: req.params.id,
-      longURL: urlDatabase[req.params.id],
-      user: req.session.user_id
-    };
-    // Render register page if not logged in
-    res.render("register", templateVars);
-  }
-});
-
-// Run server
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
 });

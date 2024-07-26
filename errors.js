@@ -1,4 +1,5 @@
-errors = {
+const errors = {
+  // Error for when a user is trying to access content that doesn't belong to them
   permission: `
       <html>
         <body>
@@ -6,6 +7,7 @@ errors = {
           <p>Please either <a href="/login">login</a> or see <a href="/urls">your URLs</a>.</p>
         </body>
       </html>`,
+  // Error for when a URL or other content does not exist or can't be found
   notFound: `
       <html>
         <body>
@@ -13,6 +15,7 @@ errors = {
           <p>Please either create a <a href="/urls/new">new URL</a> or see <a href="/urls">your URLs</a>.</p>
         </body>
       </html>`,
+  // Error for when user needs to be logged in
   notLoggedIn: `
       <html>
         <body>
@@ -20,6 +23,6 @@ errors = {
           <p>Please <a href="/login">log in</a> or <a href="/register">register</a> to access this feature.</p>
         </body>
       </html>`
-}
+};
 
-module.exports = errors
+module.exports = errors;
